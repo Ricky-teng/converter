@@ -56,11 +56,13 @@
       padding: 10px 15px;
       margin-bottom: 10px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      gap: 15px;
     }
     .file-info {
       display: flex;
       align-items: center;
       gap: 10px;
+      min-width: 180px;
     }
     .thumbnail {
       width: 40px;
@@ -68,11 +70,17 @@
       object-fit: cover;
       border-radius: 6px;
     }
-    .progress-bar {
+    .progress-container {
+      flex: 1;
+      background: #eee;
       height: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
       background: linear-gradient(90deg, #667eea, #764ba2);
       width: 0%;
-      border-radius: 10px;
       transition: width 0.2s ease;
     }
     button {
@@ -84,11 +92,18 @@
       font-weight: bold;
       cursor: pointer;
       transition: 0.3s;
+      white-space: nowrap;
     }
     button:hover { transform: scale(1.05); }
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+    /* 單獨下載按鈕的小型樣式 */
+    .download-single-btn {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      background: linear-gradient(90deg, #4f46e5, #3730a3);
     }
     select {
       border-radius: 8px;
@@ -97,7 +112,7 @@
       font-size: 1rem;
     }
     footer {
-      margin-top: 30px;
+      margin: 30px 0;
       text-align: center;
       opacity: 0.8;
       font-size: 0.9rem;
@@ -159,7 +174,7 @@
       for (let file of selected) {
         if (!file.type.startsWith("image/")) continue;
         const thumb = URL.createObjectURL(file);
-        files.push({ file, thumb, progress: 0 });
+        files.push({ file, thumb, progress: 0, convertedBlob: null, convertedName: null });
       }
       renderFileList();
     }
@@ -169,15 +184,26 @@
       files.forEach((f, i) => {
         const div = document.createElement("div");
         div.className = "file-item";
+        
+        // 判斷是否顯示下載按鈕 (只有轉換完成且有 Blob 時才顯示)
+        const downloadBtnHtml = f.convertedBlob 
+          ? `<button class="download-single-btn" onclick="downloadSingle(${i})">下載</button>` 
+          : `<button class="download-single-btn" style="visibility:hidden">下載</button>`;
+
         div.innerHTML = `
           <div class="file-info">
             <img src="${f.thumb}" class="thumbnail">
-            <div>
-              <strong>${f.convertedName || f.file.name}</strong><br>
+            <div style="overflow:hidden">
+              <strong style="display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${f.convertedName || f.file.name}</strong>
               <small>${(f.file.size/1024).toFixed(1)} KB</small>
             </div>
           </div>
-          <div style="flex:1;margin-left:20px;"><div class="progress-bar" id="bar-${i}"></div></div>
+          <div class="progress-container">
+            <div class="progress-bar" id="bar-${i}" style="width: ${f.progress}%"></div>
+          </div>
+          <div id="action-${i}">
+            ${downloadBtnHtml}
+          </div>
         `;
         fileList.appendChild(div);
       });
@@ -187,26 +213,38 @@
       if (!files.length) return alert("請先選擇檔案！");
       const format = formatSelect.value;
       const quality = parseFloat(qualitySelect.value);
+      
       convertBtn.disabled = true;
       downloadAllBtn.disabled = true;
 
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const bar = document.getElementById(`bar-${i}`);
+        const actionDiv = document.getElementById(`action-${i}`);
+        
         try {
-          const blob = await convertImage(f.file, format, quality, p => bar.style.width = `${p}%`);
+          // 轉換中...
+          const blob = await convertImage(f.file, format, quality, p => {
+            bar.style.width = `${p}%`;
+          });
+          
           const newName = f.file.name.replace(/\.[^.]+$/, "") + "." + format;
           f.convertedName = newName;
           f.convertedBlob = blob;
-          const blobUrl = URL.createObjectURL(blob);
-          f.thumb = blobUrl;
           f.progress = 100;
           bar.style.width = "100%";
+          
+          // 更新該項目的縮圖為轉換後的（如果是從其他格式轉成 WebP 等）
+          f.thumb = URL.createObjectURL(blob);
+          
+          // 轉換完成，立即更新該行的下載按鈕
+          actionDiv.innerHTML = `<button class="download-single-btn" onclick="downloadSingle(${i})">下載</button>`;
+          
         } catch (err) {
           console.error(err);
         }
       }
-      renderFileList();
+      
       downloadAllBtn.disabled = false;
       convertBtn.disabled = false;
     };
@@ -222,24 +260,47 @@
             canvas.height = img.height;
             const ctx = canvas.getContext("2d");
             ctx.drawImage(img, 0, 0);
+            
+            // 由於 toBlob 是非同步但很快，這裡模擬一下進度條視覺感
+            onProgress(100); 
             canvas.toBlob(blob => resolve(blob), `image/${format}`, quality);
           };
           img.onerror = reject;
           img.src = e.target.result;
-        };
-        reader.onprogress = e => {
-          if (e.lengthComputable) onProgress((e.loaded / e.total) * 50);
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
     }
 
+    // 單獨下載功能
+    window.downloadSingle = (index) => {
+      const f = files[index];
+      if (!f.convertedBlob) return;
+      
+      const url = URL.createObjectURL(f.convertedBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = f.convertedName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    // 全部下載功能
     downloadAllBtn.onclick = async () => {
       const zip = new JSZip();
+      let hasFile = false;
       files.forEach(f => {
-        if (f.convertedBlob) zip.file(f.convertedName, f.convertedBlob);
+        if (f.convertedBlob) {
+          zip.file(f.convertedName, f.convertedBlob);
+          hasFile = true;
+        }
       });
+      
+      if (!hasFile) return alert("沒有可下載的轉換檔案");
+
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -253,5 +314,3 @@
   </script>
 </body>
 </html>
-
-
