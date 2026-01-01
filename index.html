@@ -4,7 +4,7 @@
   <link rel="icon" href="/turn.ico">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>圖片多格式轉檔工具</title>
+  <title>圖片多格式轉檔工具 (含尺寸調整)</title>
   <style>
     body {
       margin: 0;
@@ -25,7 +25,7 @@
       background: white;
       color: #333;
       width: 90%;
-      max-width: 800px;
+      max-width: 850px;
       border-radius: 20px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
       margin-top: 30px;
@@ -43,6 +43,21 @@
       background: #eef2ff;
       border-color: #667eea;
       color: #667eea;
+    }
+    .controls {
+      margin-top:20px; 
+      display:flex; 
+      gap:15px; 
+      flex-wrap:wrap; 
+      align-items:center;
+      padding: 15px;
+      background: #f3f4f6;
+      border-radius: 12px;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .file-list {
       margin-top: 20px;
@@ -62,13 +77,14 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      min-width: 180px;
+      min-width: 200px;
     }
     .thumbnail {
-      width: 40px;
-      height: 40px;
+      width: 45px;
+      height: 45px;
       object-fit: cover;
       border-radius: 6px;
+      border: 1px solid #ddd;
     }
     .progress-container {
       flex: 1;
@@ -94,22 +110,21 @@
       transition: 0.3s;
       white-space: nowrap;
     }
-    button:hover { transform: scale(1.05); }
+    button:hover { transform: scale(1.02); filter: brightness(1.1); }
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-    /* 單獨下載按鈕的小型樣式 */
     .download-single-btn {
       padding: 6px 12px;
       font-size: 0.85rem;
       background: linear-gradient(90deg, #4f46e5, #3730a3);
     }
-    select {
-      border-radius: 8px;
-      padding: 6px 10px;
+    select, input[type="number"] {
+      border-radius: 6px;
+      padding: 6px;
       border: 1px solid #ccc;
-      font-size: 1rem;
+      font-size: 0.9rem;
     }
     footer {
       margin: 30px 0;
@@ -129,28 +144,42 @@
       <button id="selectBtn">選擇圖片</button>
     </div>
 
-    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <label>輸出格式：</label>
-      <select id="format">
-        <option value="png">PNG</option>
-        <option value="jpg">JPG</option>
-        <option value="webp">WEBP</option>
-        <option value="bmp">BMP</option>
-      </select>
-      <label>品質：</label>
-      <select id="quality">
-        <option value="0.5">低</option>
-        <option value="0.75" selected>中</option>
-        <option value="1">高</option>
-      </select>
-      <button id="convertBtn">🚀 開始轉換</button>
-      <button id="downloadAllBtn" disabled>📦 全部下載</button>
+    <div class="controls">
+      <div class="control-group">
+        <label>輸出格式：</label>
+        <select id="format">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPG</option>
+          <option value="webp" selected>WEBP</option>
+          <option value="bmp">BMP</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>品質：</label>
+        <select id="quality">
+          <option value="0.6">低</option>
+          <option value="0.8" selected>中</option>
+          <option value="1">高</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>調整寬度：</label>
+        <input type="number" id="resizeWidth" placeholder="原尺寸" style="width: 80px;">
+        <small>px (留空不縮放)</small>
+      </div>
+
+      <div style="flex-grow:1; text-align:right; display:flex; gap:10px; justify-content: flex-end;">
+        <button id="convertBtn">🚀 開始轉換</button>
+        <button id="downloadAllBtn" disabled>📦 全部下載</button>
+      </div>
     </div>
 
     <div class="file-list" id="fileList"></div>
   </div>
 
-  <footer>所有轉換皆在本地進行，不會上傳伺服器</footer>
+  <footer>所有處理皆在本地完成，確保隱私安全</footer>
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script>
@@ -162,6 +191,8 @@
     const downloadAllBtn = document.getElementById("downloadAllBtn");
     const formatSelect = document.getElementById("format");
     const qualitySelect = document.getElementById("quality");
+    const resizeWidthInput = document.getElementById("resizeWidth");
+    
     let files = [];
 
     selectBtn.onclick = () => fileInput.click();
@@ -184,8 +215,6 @@
       files.forEach((f, i) => {
         const div = document.createElement("div");
         div.className = "file-item";
-        
-        // 判斷是否顯示下載按鈕 (只有轉換完成且有 Blob 時才顯示)
         const downloadBtnHtml = f.convertedBlob 
           ? `<button class="download-single-btn" onclick="downloadSingle(${i})">下載</button>` 
           : `<button class="download-single-btn" style="visibility:hidden">下載</button>`;
@@ -201,9 +230,7 @@
           <div class="progress-container">
             <div class="progress-bar" id="bar-${i}" style="width: ${f.progress}%"></div>
           </div>
-          <div id="action-${i}">
-            ${downloadBtnHtml}
-          </div>
+          <div id="action-${i}">${downloadBtnHtml}</div>
         `;
         fileList.appendChild(div);
       });
@@ -213,6 +240,7 @@
       if (!files.length) return alert("請先選擇檔案！");
       const format = formatSelect.value;
       const quality = parseFloat(qualitySelect.value);
+      const targetWidth = parseInt(resizeWidthInput.value);
       
       convertBtn.disabled = true;
       downloadAllBtn.disabled = true;
@@ -223,93 +251,81 @@
         const actionDiv = document.getElementById(`action-${i}`);
         
         try {
-          // 轉換中...
-          const blob = await convertImage(f.file, format, quality, p => {
+          const blob = await processImage(f.file, format, quality, targetWidth, p => {
             bar.style.width = `${p}%`;
           });
           
-          const newName = f.file.name.replace(/\.[^.]+$/, "") + "." + format;
+          const ext = format === 'jpeg' ? 'jpg' : format;
+          const newName = f.file.name.replace(/\.[^.]+$/, "") + "." + ext;
           f.convertedName = newName;
           f.convertedBlob = blob;
           f.progress = 100;
           bar.style.width = "100%";
-          
-          // 更新該項目的縮圖為轉換後的（如果是從其他格式轉成 WebP 等）
           f.thumb = URL.createObjectURL(blob);
           
-          // 轉換完成，立即更新該行的下載按鈕
           actionDiv.innerHTML = `<button class="download-single-btn" onclick="downloadSingle(${i})">下載</button>`;
-          
         } catch (err) {
           console.error(err);
         }
       }
-      
       downloadAllBtn.disabled = false;
       convertBtn.disabled = false;
     };
 
-    async function convertImage(file, format, quality, onProgress) {
+    async function processImage(file, format, quality, targetWidth, onProgress) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
+            let width = img.width;
+            let height = img.height;
+
+            // Resize 邏輯：如果輸入了寬度且小於原圖，則縮放
+            if (targetWidth && targetWidth > 0) {
+              const scaleFactor = targetWidth / width;
+              width = targetWidth;
+              height = img.height * scaleFactor;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0);
             
-            // 由於 toBlob 是非同步但很快，這裡模擬一下進度條視覺感
-            onProgress(100); 
-            canvas.toBlob(blob => resolve(blob), `image/${format}`, quality);
+            // 處理平滑縮放
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            onProgress(100);
+            const mimeType = `image/${format}`;
+            canvas.toBlob(blob => resolve(blob), mimeType, quality);
           };
           img.onerror = reject;
           img.src = e.target.result;
         };
-        reader.onerror = reject;
         reader.readAsDataURL(file);
       });
     }
 
-    // 單獨下載功能
     window.downloadSingle = (index) => {
       const f = files[index];
-      if (!f.convertedBlob) return;
-      
-      const url = URL.createObjectURL(f.convertedBlob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = URL.createObjectURL(f.convertedBlob);
       a.download = f.convertedName;
-      document.body.appendChild(a);
       a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
     };
 
-    // 全部下載功能
     downloadAllBtn.onclick = async () => {
       const zip = new JSZip();
-      let hasFile = false;
-      files.forEach(f => {
-        if (f.convertedBlob) {
-          zip.file(f.convertedName, f.convertedBlob);
-          hasFile = true;
-        }
-      });
-      
-      if (!hasFile) return alert("沒有可下載的轉換檔案");
-
+      files.forEach(f => { if (f.convertedBlob) zip.file(f.convertedName, f.convertedBlob); });
       const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = "converted_images.zip";
-      document.body.appendChild(a);
+      a.href = URL.createObjectURL(blob);
+      a.download = "images_resized.zip";
       a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
     };
   </script>
 </body>
