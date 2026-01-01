@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <link rel="icon" href="/turn.ico">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>圖片轉檔工具 (含預覽比較)</title>
+  <title>圖片多格式轉檔工具 (專業修復版)</title>
   <style>
     body {
       margin: 0; font-family: "Segoe UI", "Noto Sans TC", sans-serif;
       background: linear-gradient(135deg, #667eea, #764ba2, #ec4899);
       min-height: 100vh; color: white; display: flex; flex-direction: column; align-items: center;
     }
-    h1 { font-size: 2.5rem; margin-top: 40px; text-shadow: 0 3px 10px rgba(0,0,0,0.3); }
     .container {
       background: white; color: #333; width: 90%; max-width: 850px;
       border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
@@ -32,13 +30,13 @@
       background: #f9fafb; border-radius: 10px; padding: 10px 15px;
       margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); gap: 15px;
     }
-    .file-info { display: flex; align-items: center; gap: 10px; min-width: 200px; }
+    .file-info { display: flex; align-items: center; gap: 12px; min-width: 220px; }
     .thumbnail {
-      width: 45px; height: 45px; object-fit: cover; border-radius: 6px;
-      border: 1px solid #ddd; cursor: zoom-in;
+      width: 50px; height: 50px; object-fit: cover; border-radius: 6px;
+      border: 1px solid #ddd; cursor: zoom-in; background: #eee;
     }
-    .progress-container { flex: 1; background: #eee; height: 8px; border-radius: 10px; overflow: hidden; }
-    .progress-bar { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 0%; transition: width 0.2s; }
+    .progress-container { flex: 1; background: #eee; height: 10px; border-radius: 10px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 0%; transition: width 0.3s; }
     
     button {
       background: linear-gradient(90deg, #2563eb, #1d4ed8); color: white;
@@ -46,23 +44,21 @@
       font-weight: bold; cursor: pointer; transition: 0.3s;
     }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .download-single-btn { padding: 6px 12px; font-size: 0.85rem; background: linear-gradient(90deg, #4f46e5, #3730a3); }
+    .download-single-btn { padding: 8px 16px; font-size: 0.85rem; background: linear-gradient(90deg, #4f46e5, #3730a3); }
 
-    /* Modal 預覽視窗樣式 */
+    /* Modal 預覽 */
     #previewModal {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center;
+      background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
     }
     .modal-content {
-      background: white; color: #333; padding: 20px; border-radius: 15px;
-      max-width: 90%; max-height: 90%; overflow-y: auto; text-align: center;
+      background: white; color: #333; padding: 25px; border-radius: 15px;
+      max-width: 95%; max-height: 95%; overflow-y: auto; text-align: center;
     }
-    .comparison { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
-    .comparison-box { flex: 1; min-width: 300px; }
-    .comparison-box img { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; }
-    .close-modal { margin-top: 20px; background: #666; }
-
-    select, input[type="number"] { border-radius: 6px; padding: 6px; border: 1px solid #ccc; }
+    .comparison { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin: 20px 0; }
+    .comparison-box img { max-width: 100%; max-height: 60vh; border: 1px solid #ddd; border-radius: 8px; }
+    
+    select, input[type="number"] { border-radius: 6px; padding: 8px; border: 1px solid #ccc; }
     footer { margin: 30px 0; text-align: center; opacity: 0.8; font-size: 0.9rem; }
   </style>
 </head>
@@ -76,9 +72,9 @@
     </div>
 
     <div class="controls">
-      <div class="control-group"><label>輸出格式：</label><select id="format"><option value="png">PNG</option><option value="jpeg" selected>JPG</option><option value="webp">WEBP</option><option value="bmp">BMP</option></select></div>
-      <div class="control-group"><label>品質：</label><select id="quality"><option value="0.5">低</option><option value="0.8" selected>中</option><option value="1">高</option></select></div>
-      <div class="control-group"><label>調整寬度：</label><input type="number" id="resizeWidth" placeholder="原尺寸" style="width:80px"> px</div>
+      <div class="control-group"><label>格式：</label><select id="format"><option value="png">PNG</option><option value="jpeg" selected>JPG</option><option value="webp">WEBP</option><option value="bmp">BMP</option></select></div>
+      <div class="control-group"><label>品質：</label><select id="quality"><option value="0.6">低</option><option value="0.8" selected>中</option><option value="1">高</option></select></div>
+      <div class="control-group"><label>寬度(px)：</label><input type="number" id="resizeWidth" placeholder="原尺寸" style="width:90px"></div>
       <div style="flex-grow:1; text-align:right; display:flex; gap:10px; justify-content:flex-end;">
         <button id="convertBtn">🚀 開始轉換</button>
         <button id="downloadAllBtn" disabled>📦 全部下載</button>
@@ -91,10 +87,10 @@
     <div class="modal-content">
       <h3 id="previewTitle">圖片預覽比較</h3>
       <div class="comparison">
-        <div class="comparison-box"><p>原始圖</p><img id="origImg"></div>
-        <div class="comparison-box"><p>轉檔後</p><img id="convImg"></div>
+        <div class="comparison-box"><p><b>原始圖</b></p><img id="origImg"></div>
+        <div class="comparison-box"><p><b>轉檔後</b></p><img id="convImg"></div>
       </div>
-      <button class="close-modal" onclick="closeModal()">關閉預覽</button>
+      <button onclick="closeModal()" style="background:#666">關閉預覽</button>
     </div>
   </div>
 
@@ -105,6 +101,7 @@
     const fileInput = document.getElementById("fileInput");
     const fileList = document.getElementById("fileList");
     const downloadAllBtn = document.getElementById("downloadAllBtn");
+    const convertBtn = document.getElementById("convertBtn");
     let files = [];
 
     document.getElementById("selectBtn").onclick = () => fileInput.click();
@@ -113,8 +110,8 @@
     function addFiles(selected) {
       for (let file of selected) {
         if (!file.type.startsWith("image/")) continue;
-        const thumb = URL.createObjectURL(file);
-        files.push({ file, originalUrl: thumb, currentThumb: thumb, progress: 0, convertedBlob: null, convertedName: null });
+        const url = URL.createObjectURL(file);
+        files.push({ file, originalUrl: url, currentThumb: url, progress: 0, convertedBlob: null, convertedName: null });
       }
       renderFileList();
     }
@@ -126,7 +123,7 @@
         div.className = "file-item";
         div.innerHTML = `
           <div class="file-info">
-            <img src="${f.currentThumb}" class="thumbnail" onclick="openPreview(${i})">
+            <img src="${f.currentThumb}" class="thumbnail" onclick="openPreview(${i})" title="點擊預覽比較">
             <div style="overflow:hidden">
               <strong style="display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${f.convertedName || f.file.name}</strong>
               <small>${(f.file.size/1024).toFixed(1)} KB</small>
@@ -141,48 +138,57 @@
       });
     }
 
-    document.getElementById("convertBtn").onclick = async () => {
+    convertBtn.onclick = async () => {
       if (!files.length) return alert("請先選擇檔案！");
       const format = document.getElementById("format").value;
       const quality = parseFloat(document.getElementById("quality").value);
       const targetWidth = parseInt(document.getElementById("resizeWidth").value);
       
-      document.getElementById("convertBtn").disabled = true;
+      // 防呆：如果寬度小於 10px，當作不調整尺寸
+      const finalWidth = (targetWidth > 10) ? targetWidth : null;
+
+      convertBtn.disabled = true;
 
       for (let i = 0; i < files.length; i++) {
-        const f = files[i];
         try {
-          const blob = await processImage(f.file, format, quality, targetWidth, p => {
+          const blob = await processImage(files[i].file, format, quality, finalWidth, p => {
             document.getElementById(`bar-${i}`).style.width = p + "%";
           });
           
-          f.convertedBlob = blob;
-          f.convertedName = f.file.name.replace(/\.[^.]+$/, "") + "." + (format === 'jpeg' ? 'jpg' : format);
-          f.progress = 100;
-          f.currentThumb = URL.createObjectURL(blob);
+          files[i].convertedBlob = blob;
+          files[i].convertedName = files[i].file.name.replace(/\.[^.]+$/, "") + "." + (format === 'jpeg' ? 'jpg' : format);
+          files[i].progress = 100;
+          files[i].currentThumb = URL.createObjectURL(blob);
           
-          renderFileList(); // 重新渲染以顯示下載按鈕
-        } catch (err) { console.error(err); }
+          // 轉換完一個，立即更新該行
+          renderFileList();
+        } catch (err) { 
+          console.error(err); 
+          alert("轉換失敗，請檢查檔案格式");
+        }
       }
       downloadAllBtn.disabled = false;
-      document.getElementById("convertBtn").disabled = false;
+      convertBtn.disabled = false;
     };
 
     function processImage(file, format, quality, targetWidth, onProgress) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement("canvas");
             let w = img.width, h = img.height;
-            if (targetWidth > 0) { h = (targetWidth / w) * h; w = targetWidth; }
+            if (targetWidth) { h = (targetWidth / w) * h; w = targetWidth; }
             canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext("2d");
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, w, h);
             onProgress(100);
-            canvas.toBlob(blob => resolve(blob), `image/${format}`, quality);
+            canvas.toBlob(b => b ? resolve(b) : reject("Blob creation failed"), `image/${format}`, quality);
           };
+          img.onerror = () => reject("Image load error");
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
@@ -191,7 +197,6 @@
 
     window.openPreview = (i) => {
       const f = files[i];
-      document.getElementById("previewTitle").innerText = `預覽：${f.file.name}`;
       document.getElementById("origImg").src = f.originalUrl;
       document.getElementById("convImg").src = f.convertedBlob ? URL.createObjectURL(f.convertedBlob) : f.originalUrl;
       document.getElementById("previewModal").style.display = "flex";
@@ -200,26 +205,28 @@
     window.closeModal = () => document.getElementById("previewModal").style.display = "none";
 
     window.downloadSingle = (i) => {
+      const f = files[i];
+      if (!f.convertedBlob) return;
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(files[i].convertedBlob);
-      a.download = files[i].convertedName;
+      a.href = URL.createObjectURL(f.convertedBlob);
+      a.download = f.convertedName;
       a.click();
     };
 
     downloadAllBtn.onclick = async () => {
       const zip = new JSZip();
-      let count = 0;
+      let hasFile = false;
       files.forEach(f => {
         if (f.convertedBlob) {
           zip.file(f.convertedName, f.convertedBlob);
-          count++;
+          hasFile = true;
         }
       });
-      if (count === 0) return alert("沒有已轉換的檔案");
+      if (!hasFile) return alert("沒有已轉換的檔案");
       const content = await zip.generateAsync({type:"blob"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(content);
-      a.download = "converted_images.zip";
+      a.download = "images_export.zip";
       a.click();
     };
   </script>
