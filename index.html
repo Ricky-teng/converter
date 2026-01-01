@@ -4,134 +4,66 @@
   <link rel="icon" href="/turn.ico">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>圖片多格式轉檔工具 (含尺寸調整)</title>
+  <title>圖片轉檔工具 (含預覽比較)</title>
   <style>
     body {
-      margin: 0;
-      font-family: "Segoe UI", "Noto Sans TC", sans-serif;
+      margin: 0; font-family: "Segoe UI", "Noto Sans TC", sans-serif;
       background: linear-gradient(135deg, #667eea, #764ba2, #ec4899);
-      min-height: 100vh;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      min-height: 100vh; color: white; display: flex; flex-direction: column; align-items: center;
     }
-    h1 {
-      font-size: 2.5rem;
-      margin-top: 40px;
-      text-shadow: 0 3px 10px rgba(0,0,0,0.3);
-    }
+    h1 { font-size: 2.5rem; margin-top: 40px; text-shadow: 0 3px 10px rgba(0,0,0,0.3); }
     .container {
-      background: white;
-      color: #333;
-      width: 90%;
-      max-width: 850px;
-      border-radius: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      margin-top: 30px;
-      padding: 25px;
+      background: white; color: #333; width: 90%; max-width: 850px;
+      border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      margin-top: 30px; padding: 25px;
     }
     .upload-zone {
-      border: 2px dashed #999;
-      border-radius: 15px;
-      padding: 40px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s;
+      border: 2px dashed #999; border-radius: 15px; padding: 40px;
+      text-align: center; cursor: pointer; transition: 0.3s;
     }
-    .upload-zone.dragover {
-      background: #eef2ff;
-      border-color: #667eea;
-      color: #667eea;
-    }
+    .upload-zone.dragover { background: #eef2ff; border-color: #667eea; }
     .controls {
-      margin-top:20px; 
-      display:flex; 
-      gap:15px; 
-      flex-wrap:wrap; 
-      align-items:center;
-      padding: 15px;
-      background: #f3f4f6;
-      border-radius: 12px;
+      margin-top:20px; display:flex; gap:15px; flex-wrap:wrap; align-items:center;
+      padding: 15px; background: #f3f4f6; border-radius: 12px;
     }
-    .control-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .file-list {
-      margin-top: 20px;
-    }
+    .control-group { display: flex; align-items: center; gap: 8px; }
     .file-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #f9fafb;
-      border-radius: 10px;
-      padding: 10px 15px;
-      margin-bottom: 10px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      gap: 15px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: #f9fafb; border-radius: 10px; padding: 10px 15px;
+      margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); gap: 15px;
     }
-    .file-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 200px;
-    }
+    .file-info { display: flex; align-items: center; gap: 10px; min-width: 200px; }
     .thumbnail {
-      width: 45px;
-      height: 45px;
-      object-fit: cover;
-      border-radius: 6px;
-      border: 1px solid #ddd;
+      width: 45px; height: 45px; object-fit: cover; border-radius: 6px;
+      border: 1px solid #ddd; cursor: zoom-in;
     }
-    .progress-container {
-      flex: 1;
-      background: #eee;
-      height: 8px;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #667eea, #764ba2);
-      width: 0%;
-      transition: width 0.2s ease;
-    }
+    .progress-container { flex: 1; background: #eee; height: 8px; border-radius: 10px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 0%; transition: width 0.2s; }
+    
     button {
-      background: linear-gradient(90deg, #2563eb, #1d4ed8);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-      white-space: nowrap;
+      background: linear-gradient(90deg, #2563eb, #1d4ed8); color: white;
+      border: none; border-radius: 8px; padding: 10px 20px;
+      font-weight: bold; cursor: pointer; transition: 0.3s;
     }
-    button:hover { transform: scale(1.02); filter: brightness(1.1); }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .download-single-btn { padding: 6px 12px; font-size: 0.85rem; background: linear-gradient(90deg, #4f46e5, #3730a3); }
+
+    /* Modal 預覽視窗樣式 */
+    #previewModal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center;
     }
-    .download-single-btn {
-      padding: 6px 12px;
-      font-size: 0.85rem;
-      background: linear-gradient(90deg, #4f46e5, #3730a3);
+    .modal-content {
+      background: white; color: #333; padding: 20px; border-radius: 15px;
+      max-width: 90%; max-height: 90%; overflow-y: auto; text-align: center;
     }
-    select, input[type="number"] {
-      border-radius: 6px;
-      padding: 6px;
-      border: 1px solid #ccc;
-      font-size: 0.9rem;
-    }
-    footer {
-      margin: 30px 0;
-      text-align: center;
-      opacity: 0.8;
-      font-size: 0.9rem;
-    }
+    .comparison { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
+    .comparison-box { flex: 1; min-width: 300px; }
+    .comparison-box img { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; }
+    .close-modal { margin-top: 20px; background: #666; }
+
+    select, input[type="number"] { border-radius: 6px; padding: 6px; border: 1px solid #ccc; }
+    footer { margin: 30px 0; text-align: center; opacity: 0.8; font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -139,73 +71,50 @@
   <div class="container">
     <div id="uploadZone" class="upload-zone">
       拖放圖片到這裡，或點擊選擇檔案
-      <br /><br />
       <input type="file" id="fileInput" accept="image/*" multiple hidden>
-      <button id="selectBtn">選擇圖片</button>
+      <br><br><button id="selectBtn">選擇圖片</button>
     </div>
 
     <div class="controls">
-      <div class="control-group">
-        <label>輸出格式：</label>
-        <select id="format">
-          <option value="png">PNG</option>
-          <option value="jpeg">JPG</option>
-          <option value="webp" selected>WEBP</option>
-          <option value="bmp">BMP</option>
-        </select>
-      </div>
-      
-      <div class="control-group">
-        <label>品質：</label>
-        <select id="quality">
-          <option value="0.6">低</option>
-          <option value="0.8" selected>中</option>
-          <option value="1">高</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label>調整寬度：</label>
-        <input type="number" id="resizeWidth" placeholder="原尺寸" style="width: 80px;">
-        <small>px (留空不縮放)</small>
-      </div>
-
-      <div style="flex-grow:1; text-align:right; display:flex; gap:10px; justify-content: flex-end;">
+      <div class="control-group"><label>輸出格式：</label><select id="format"><option value="png">PNG</option><option value="jpeg" selected>JPG</option><option value="webp">WEBP</option><option value="bmp">BMP</option></select></div>
+      <div class="control-group"><label>品質：</label><select id="quality"><option value="0.5">低</option><option value="0.8" selected>中</option><option value="1">高</option></select></div>
+      <div class="control-group"><label>調整寬度：</label><input type="number" id="resizeWidth" placeholder="原尺寸" style="width:80px"> px</div>
+      <div style="flex-grow:1; text-align:right; display:flex; gap:10px; justify-content:flex-end;">
         <button id="convertBtn">🚀 開始轉換</button>
         <button id="downloadAllBtn" disabled>📦 全部下載</button>
       </div>
     </div>
-
     <div class="file-list" id="fileList"></div>
+  </div>
+
+  <div id="previewModal">
+    <div class="modal-content">
+      <h3 id="previewTitle">圖片預覽比較</h3>
+      <div class="comparison">
+        <div class="comparison-box"><p>原始圖</p><img id="origImg"></div>
+        <div class="comparison-box"><p>轉檔後</p><img id="convImg"></div>
+      </div>
+      <button class="close-modal" onclick="closeModal()">關閉預覽</button>
+    </div>
   </div>
 
   <footer>所有處理皆在本地完成，確保隱私安全</footer>
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script>
-    const uploadZone = document.getElementById("uploadZone");
     const fileInput = document.getElementById("fileInput");
-    const selectBtn = document.getElementById("selectBtn");
     const fileList = document.getElementById("fileList");
-    const convertBtn = document.getElementById("convertBtn");
     const downloadAllBtn = document.getElementById("downloadAllBtn");
-    const formatSelect = document.getElementById("format");
-    const qualitySelect = document.getElementById("quality");
-    const resizeWidthInput = document.getElementById("resizeWidth");
-    
     let files = [];
 
-    selectBtn.onclick = () => fileInput.click();
+    document.getElementById("selectBtn").onclick = () => fileInput.click();
     fileInput.onchange = e => addFiles(e.target.files);
-    uploadZone.ondrop = e => { e.preventDefault(); uploadZone.classList.remove("dragover"); addFiles(e.dataTransfer.files); };
-    uploadZone.ondragover = e => { e.preventDefault(); uploadZone.classList.add("dragover"); };
-    uploadZone.ondragleave = () => uploadZone.classList.remove("dragover");
 
     function addFiles(selected) {
       for (let file of selected) {
         if (!file.type.startsWith("image/")) continue;
         const thumb = URL.createObjectURL(file);
-        files.push({ file, thumb, progress: 0, convertedBlob: null, convertedName: null });
+        files.push({ file, originalUrl: thumb, currentThumb: thumb, progress: 0, convertedBlob: null, convertedName: null });
       }
       renderFileList();
     }
@@ -215,116 +124,102 @@
       files.forEach((f, i) => {
         const div = document.createElement("div");
         div.className = "file-item";
-        const downloadBtnHtml = f.convertedBlob 
-          ? `<button class="download-single-btn" onclick="downloadSingle(${i})">下載</button>` 
-          : `<button class="download-single-btn" style="visibility:hidden">下載</button>`;
-
         div.innerHTML = `
           <div class="file-info">
-            <img src="${f.thumb}" class="thumbnail">
+            <img src="${f.currentThumb}" class="thumbnail" onclick="openPreview(${i})">
             <div style="overflow:hidden">
               <strong style="display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${f.convertedName || f.file.name}</strong>
               <small>${(f.file.size/1024).toFixed(1)} KB</small>
             </div>
           </div>
-          <div class="progress-container">
-            <div class="progress-bar" id="bar-${i}" style="width: ${f.progress}%"></div>
+          <div class="progress-container"><div class="progress-bar" id="bar-${i}" style="width:${f.progress}%"></div></div>
+          <div id="action-${i}">
+            ${f.convertedBlob ? `<button class="download-single-btn" onclick="downloadSingle(${i})">下載</button>` : ''}
           </div>
-          <div id="action-${i}">${downloadBtnHtml}</div>
         `;
         fileList.appendChild(div);
       });
     }
 
-    convertBtn.onclick = async () => {
+    document.getElementById("convertBtn").onclick = async () => {
       if (!files.length) return alert("請先選擇檔案！");
-      const format = formatSelect.value;
-      const quality = parseFloat(qualitySelect.value);
-      const targetWidth = parseInt(resizeWidthInput.value);
+      const format = document.getElementById("format").value;
+      const quality = parseFloat(document.getElementById("quality").value);
+      const targetWidth = parseInt(document.getElementById("resizeWidth").value);
       
-      convertBtn.disabled = true;
-      downloadAllBtn.disabled = true;
+      document.getElementById("convertBtn").disabled = true;
 
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
-        const bar = document.getElementById(`bar-${i}`);
-        const actionDiv = document.getElementById(`action-${i}`);
-        
         try {
           const blob = await processImage(f.file, format, quality, targetWidth, p => {
-            bar.style.width = `${p}%`;
+            document.getElementById(`bar-${i}`).style.width = p + "%";
           });
           
-          const ext = format === 'jpeg' ? 'jpg' : format;
-          const newName = f.file.name.replace(/\.[^.]+$/, "") + "." + ext;
-          f.convertedName = newName;
           f.convertedBlob = blob;
+          f.convertedName = f.file.name.replace(/\.[^.]+$/, "") + "." + (format === 'jpeg' ? 'jpg' : format);
           f.progress = 100;
-          bar.style.width = "100%";
-          f.thumb = URL.createObjectURL(blob);
+          f.currentThumb = URL.createObjectURL(blob);
           
-          actionDiv.innerHTML = `<button class="download-single-btn" onclick="downloadSingle(${i})">下載</button>`;
-        } catch (err) {
-          console.error(err);
-        }
+          renderFileList(); // 重新渲染以顯示下載按鈕
+        } catch (err) { console.error(err); }
       }
       downloadAllBtn.disabled = false;
-      convertBtn.disabled = false;
+      document.getElementById("convertBtn").disabled = false;
     };
 
-    async function processImage(file, format, quality, targetWidth, onProgress) {
-      return new Promise((resolve, reject) => {
+    function processImage(file, format, quality, targetWidth, onProgress) {
+      return new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement("canvas");
-            let width = img.width;
-            let height = img.height;
-
-            // Resize 邏輯：如果輸入了寬度且小於原圖，則縮放
-            if (targetWidth && targetWidth > 0) {
-              const scaleFactor = targetWidth / width;
-              width = targetWidth;
-              height = img.height * scaleFactor;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
+            let w = img.width, h = img.height;
+            if (targetWidth > 0) { h = (targetWidth / w) * h; w = targetWidth; }
+            canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext("2d");
-            
-            // 處理平滑縮放
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            
-            ctx.drawImage(img, 0, 0, width, height);
-            
+            ctx.drawImage(img, 0, 0, w, h);
             onProgress(100);
-            const mimeType = `image/${format}`;
-            canvas.toBlob(blob => resolve(blob), mimeType, quality);
+            canvas.toBlob(blob => resolve(blob), `image/${format}`, quality);
           };
-          img.onerror = reject;
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
       });
     }
 
-    window.downloadSingle = (index) => {
-      const f = files[index];
+    window.openPreview = (i) => {
+      const f = files[i];
+      document.getElementById("previewTitle").innerText = `預覽：${f.file.name}`;
+      document.getElementById("origImg").src = f.originalUrl;
+      document.getElementById("convImg").src = f.convertedBlob ? URL.createObjectURL(f.convertedBlob) : f.originalUrl;
+      document.getElementById("previewModal").style.display = "flex";
+    };
+
+    window.closeModal = () => document.getElementById("previewModal").style.display = "none";
+
+    window.downloadSingle = (i) => {
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(f.convertedBlob);
-      a.download = f.convertedName;
+      a.href = URL.createObjectURL(files[i].convertedBlob);
+      a.download = files[i].convertedName;
       a.click();
     };
 
     downloadAllBtn.onclick = async () => {
       const zip = new JSZip();
-      files.forEach(f => { if (f.convertedBlob) zip.file(f.convertedName, f.convertedBlob); });
-      const blob = await zip.generateAsync({ type: "blob" });
+      let count = 0;
+      files.forEach(f => {
+        if (f.convertedBlob) {
+          zip.file(f.convertedName, f.convertedBlob);
+          count++;
+        }
+      });
+      if (count === 0) return alert("沒有已轉換的檔案");
+      const content = await zip.generateAsync({type:"blob"});
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "images_resized.zip";
+      a.href = URL.createObjectURL(content);
+      a.download = "converted_images.zip";
       a.click();
     };
   </script>
